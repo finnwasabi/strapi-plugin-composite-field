@@ -1,0 +1,72 @@
+{
+  "name": "@tunghtml/strapi-plugin-composite-field",
+  "version": "1.0.0",
+  "description": "A Strapi v5 plugin to create composite display fields by combining multiple text fields",
+  "keywords": [
+    "strapi",
+    "strapi-plugin",
+    "custom-fields",
+    "composite",
+    "strapi-v5"
+  ],
+  "homepage": "https://github.com/finnwasabi/strapi-plugin-composite-field#readme",
+  "bugs": {
+    "url": "https://github.com/finnwasabi/strapi-plugin-composite-field/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/finnwasabi/strapi-plugin-composite-field.git"
+  },
+  "license": "MIT",
+  "author": "Tung Le <tunghtml@gmail.com>",
+  "type": "commonjs",
+  "exports": {
+    "./package.json": "./package.json",
+    "./strapi-admin": {
+      "source": "./admin/src/index.js",
+      "import": "./dist/admin/index.mjs",
+      "require": "./dist/admin/index.js",
+      "default": "./dist/admin/index.js"
+    },
+    "./strapi-server": {
+      "source": "./server/src/index.js",
+      "import": "./dist/server/index.mjs",
+      "require": "./dist/server/index.js",
+      "default": "./dist/server/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "strapi-plugin build",
+    "watch": "strapi-plugin watch",
+    "verify": "strapi-plugin verify"
+  },
+  "dependencies": {
+    "@strapi/design-system": "^2.0.0-rc.11",
+    "@strapi/icons": "^2.0.0-rc.11"
+  },
+  "devDependencies": {
+    "@strapi/sdk-plugin": "^5.2.6",
+    "@strapi/strapi": "^5.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
+    "styled-components": "^6.1.13"
+  },
+  "peerDependencies": {
+    "@strapi/strapi": "^5.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
+    "styled-components": "^6.1.13"
+  },
+  "strapi": {
+    "kind": "plugin",
+    "name": "composite-field",
+    "displayName": "Composite Field",
+    "description": "Create composite display fields by combining multiple text fields"
+  }
+}
