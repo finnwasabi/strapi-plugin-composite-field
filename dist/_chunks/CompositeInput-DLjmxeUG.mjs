@@ -497,29 +497,47 @@ const CompositeInput = (props) => {
   }, [fields, separator, onChange, name]);
   React__default.useEffect(() => {
     if (!autoGenerate || fields.length === 0) return;
+    let debounceTimer;
     const handleFieldChange = () => {
-      setTimeout(() => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
         handleGenerate();
       }, 300);
     };
     const listeners = [];
+    const observers = [];
     fields.forEach((fieldPath) => {
       const elements = document.querySelectorAll(
-        `input[name="${fieldPath}"], textarea[name="${fieldPath}"], select[name="${fieldPath}"], div[role="combobox"][name="${fieldPath}"]`
+        `input[name="${fieldPath}"], textarea[name="${fieldPath}"], select[name="${fieldPath}"]`
       );
       elements.forEach((element) => {
         element.addEventListener("change", handleFieldChange);
         element.addEventListener("input", handleFieldChange);
-        element.addEventListener("click", handleFieldChange);
         listeners.push({ element, handler: handleFieldChange });
       });
+      const combobox = document.querySelector(
+        `div[role="combobox"][name="${fieldPath}"]`
+      );
+      if (combobox) {
+        const observer = new MutationObserver(handleFieldChange);
+        observer.observe(combobox, {
+          childList: true,
+          subtree: true,
+          characterData: true
+        });
+        observers.push(observer);
+        combobox.addEventListener("click", handleFieldChange);
+        listeners.push({ element: combobox, handler: handleFieldChange });
+      }
     });
     return () => {
+      clearTimeout(debounceTimer);
       listeners.forEach(({ element, handler }) => {
         element.removeEventListener("change", handler);
         element.removeEventListener("input", handler);
         element.removeEventListener("click", handler);
       });
+      observers.forEach((observer) => observer.disconnect());
     };
   }, [autoGenerate, fields, handleGenerate]);
   return /* @__PURE__ */ jsx(

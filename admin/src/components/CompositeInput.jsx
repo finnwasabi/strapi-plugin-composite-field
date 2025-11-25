@@ -126,34 +126,60 @@ const CompositeInput = (props) => {
   React.useEffect(() => {
     if (!autoGenerate || fields.length === 0) return;
 
+    let debounceTimer;
     const handleFieldChange = () => {
       // Debounce to avoid too many updates
-      setTimeout(() => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
         handleGenerate();
       }, 300);
     };
 
     // Listen to input events on all fields
     const listeners = [];
+    const observers = [];
+
     fields.forEach((fieldPath) => {
+      // For regular input/textarea/select fields
       const elements = document.querySelectorAll(
-        `input[name="${fieldPath}"], textarea[name="${fieldPath}"], select[name="${fieldPath}"], div[role="combobox"][name="${fieldPath}"]`
+        `input[name="${fieldPath}"], textarea[name="${fieldPath}"], select[name="${fieldPath}"]`
       );
 
       elements.forEach((element) => {
         element.addEventListener("change", handleFieldChange);
         element.addEventListener("input", handleFieldChange);
-        element.addEventListener("click", handleFieldChange);
         listeners.push({ element, handler: handleFieldChange });
       });
+
+      // For combobox (enum) fields - use MutationObserver to watch text changes
+      const combobox = document.querySelector(
+        `div[role="combobox"][name="${fieldPath}"]`
+      );
+
+      if (combobox) {
+        // Watch for text content changes in the combobox
+        const observer = new MutationObserver(handleFieldChange);
+        observer.observe(combobox, {
+          childList: true,
+          subtree: true,
+          characterData: true,
+        });
+        observers.push(observer);
+
+        // Also listen to click events on the combobox
+        combobox.addEventListener("click", handleFieldChange);
+        listeners.push({ element: combobox, handler: handleFieldChange });
+      }
     });
 
     return () => {
+      clearTimeout(debounceTimer);
       listeners.forEach(({ element, handler }) => {
         element.removeEventListener("change", handler);
         element.removeEventListener("input", handler);
         element.removeEventListener("click", handler);
       });
+      observers.forEach((observer) => observer.disconnect());
     };
   }, [autoGenerate, fields, handleGenerate]);
 
