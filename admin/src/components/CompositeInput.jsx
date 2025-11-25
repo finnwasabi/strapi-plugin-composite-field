@@ -31,6 +31,8 @@ const CompositeInput = (props) => {
 
   const fieldsConfig = attribute?.options?.fields || "";
   const separator = attribute?.options?.separator || " - ";
+  const editable = attribute?.options?.editable !== false;
+  const autoGenerate = attribute?.options?.autoGenerate === true;
 
   // Parse fields
   let fields = [];
@@ -49,16 +51,37 @@ const CompositeInput = (props) => {
     }
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = React.useCallback(() => {
     const formData = {};
 
-    // Only get simple text fields
+    // Get values from text fields, selects, and enums
     fields.forEach((fieldPath) => {
+      // Try to find input/textarea/select
       const input = document.querySelector(
-        `input[name="${fieldPath}"], textarea[name="${fieldPath}"], select[name="${fieldPath}"]`,
+        `input[name="${fieldPath}"], textarea[name="${fieldPath}"], select[name="${fieldPath}"]`
       );
+
       if (input && input.value) {
         formData[fieldPath] = input.value;
+      } else {
+        // Try to find enum field (Strapi v5 uses different structure)
+        const enumSelect = document.querySelector(
+          `[data-strapi-field-name="${fieldPath}"] select`
+        );
+        if (enumSelect && enumSelect.value) {
+          formData[fieldPath] = enumSelect.value;
+        }
+
+        // Also try to find the selected option text for better display
+        const enumButton = document.querySelector(
+          `[data-strapi-field-name="${fieldPath}"] button[role="combobox"]`
+        );
+        if (enumButton) {
+          const selectedText = enumButton.textContent?.trim();
+          if (selectedText && selectedText !== "Select...") {
+            formData[fieldPath] = selectedText;
+          }
+        }
       }
     });
 
@@ -79,7 +102,41 @@ const CompositeInput = (props) => {
     if (onChange) {
       onChange({ target: { name, value: result, type: "text" } });
     }
-  };
+  }, [fields, separator, onChange, name]);
+
+  // Auto-generate when fields change
+  React.useEffect(() => {
+    if (!autoGenerate || fields.length === 0) return;
+
+    const handleFieldChange = () => {
+      // Debounce to avoid too many updates
+      const timeoutId = setTimeout(() => {
+        handleGenerate();
+      }, 300);
+      return () => clearTimeout(timeoutId);
+    };
+
+    // Listen to input events on all fields
+    const listeners = [];
+    fields.forEach((fieldPath) => {
+      const elements = document.querySelectorAll(
+        `input[name="${fieldPath}"], textarea[name="${fieldPath}"], select[name="${fieldPath}"], [data-strapi-field-name="${fieldPath}"] select, [data-strapi-field-name="${fieldPath}"] button`
+      );
+
+      elements.forEach((element) => {
+        element.addEventListener("change", handleFieldChange);
+        element.addEventListener("input", handleFieldChange);
+        listeners.push({ element, handler: handleFieldChange });
+      });
+    });
+
+    return () => {
+      listeners.forEach(({ element, handler }) => {
+        element.removeEventListener("change", handler);
+        element.removeEventListener("input", handler);
+      });
+    };
+  }, [autoGenerate, fields, handleGenerate]);
 
   return (
     <Field.Root
@@ -101,49 +158,57 @@ const CompositeInput = (props) => {
             type="text"
             value={localValue}
             onChange={handleChange}
-            disabled={disabled}
-            placeholder="Click button to generate"
+            disabled={disabled || !editable}
+            placeholder={
+              autoGenerate
+                ? "Auto-generated from fields"
+                : "Click button to generate"
+            }
             style={{ paddingRight: "40px" }}
           />
-          <div
-            style={{
-              position: "absolute",
-              right: "8px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Button
-              type="button"
-              onClick={handleGenerate}
-              disabled={disabled || fields.length === 0}
-              variant="tertiary"
-              aria-label="Generate composite value"
+          {!autoGenerate && (
+            <div
               style={{
-                width: "28px",
-                height: "28px",
-                padding: "0",
-                minWidth: "auto",
-                border: "none",
-                background: "transparent",
+                position: "absolute",
+                right: "8px",
+                top: "50%",
+                transform: "translateY(-50%)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#8e8ea9",
               }}
             >
-              <Play style={{ width: "14px", height: "14px" }} />
-            </Button>
-          </div>
+              <Button
+                type="button"
+                onClick={handleGenerate}
+                disabled={disabled || fields.length === 0}
+                variant="tertiary"
+                aria-label="Generate composite value"
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  padding: "0",
+                  minWidth: "auto",
+                  border: "none",
+                  background: "transparent",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#8e8ea9",
+                }}
+              >
+                <Play style={{ width: "14px", height: "14px" }} />
+              </Button>
+            </div>
+          )}
         </div>
 
         {fields.length > 0 && (
           <Field.Hint>
             <Typography variant="pi" textColor="neutral600">
               Combines: {fields.join(", ")}
+              {autoGenerate && " (auto-generated)"}
+              {!editable && " (read-only)"}
             </Typography>
           </Field.Hint>
         )}

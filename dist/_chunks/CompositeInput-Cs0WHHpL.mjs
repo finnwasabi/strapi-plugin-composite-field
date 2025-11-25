@@ -434,6 +434,8 @@ const CompositeInput = (props) => {
   }, [value]);
   const fieldsConfig = attribute?.options?.fields || "";
   const separator = attribute?.options?.separator || " - ";
+  const editable = attribute?.options?.editable !== false;
+  const autoGenerate = attribute?.options?.autoGenerate === true;
   let fields = [];
   if (typeof fieldsConfig === "string") {
     fields = fieldsConfig.split("\n").map((f) => f.trim()).filter(Boolean);
@@ -445,7 +447,7 @@ const CompositeInput = (props) => {
       onChange({ target: { name, value: newValue, type: "text" } });
     }
   };
-  const handleGenerate = () => {
+  const handleGenerate = React__default.useCallback(() => {
     const formData = {};
     fields.forEach((fieldPath) => {
       const input = document.querySelector(
@@ -453,6 +455,22 @@ const CompositeInput = (props) => {
       );
       if (input && input.value) {
         formData[fieldPath] = input.value;
+      } else {
+        const enumSelect = document.querySelector(
+          `[data-strapi-field-name="${fieldPath}"] select`
+        );
+        if (enumSelect && enumSelect.value) {
+          formData[fieldPath] = enumSelect.value;
+        }
+        const enumButton = document.querySelector(
+          `[data-strapi-field-name="${fieldPath}"] button[role="combobox"]`
+        );
+        if (enumButton) {
+          const selectedText = enumButton.textContent?.trim();
+          if (selectedText && selectedText !== "Select...") {
+            formData[fieldPath] = selectedText;
+          }
+        }
       }
     });
     const parts = [];
@@ -468,7 +486,33 @@ const CompositeInput = (props) => {
     if (onChange) {
       onChange({ target: { name, value: result, type: "text" } });
     }
-  };
+  }, [fields, separator, onChange, name]);
+  React__default.useEffect(() => {
+    if (!autoGenerate || fields.length === 0) return;
+    const handleFieldChange = () => {
+      const timeoutId = setTimeout(() => {
+        handleGenerate();
+      }, 300);
+      return () => clearTimeout(timeoutId);
+    };
+    const listeners = [];
+    fields.forEach((fieldPath) => {
+      const elements = document.querySelectorAll(
+        `input[name="${fieldPath}"], textarea[name="${fieldPath}"], select[name="${fieldPath}"], [data-strapi-field-name="${fieldPath}"] select, [data-strapi-field-name="${fieldPath}"] button`
+      );
+      elements.forEach((element) => {
+        element.addEventListener("change", handleFieldChange);
+        element.addEventListener("input", handleFieldChange);
+        listeners.push({ element, handler: handleFieldChange });
+      });
+    });
+    return () => {
+      listeners.forEach(({ element, handler }) => {
+        element.removeEventListener("change", handler);
+        element.removeEventListener("input", handler);
+      });
+    };
+  }, [autoGenerate, fields, handleGenerate]);
   return /* @__PURE__ */ jsx(
     Field.Root,
     {
@@ -486,12 +530,12 @@ const CompositeInput = (props) => {
               type: "text",
               value: localValue,
               onChange: handleChange,
-              disabled,
-              placeholder: "Click button to generate",
+              disabled: disabled || !editable,
+              placeholder: autoGenerate ? "Auto-generated from fields" : "Click button to generate",
               style: { paddingRight: "40px" }
             }
           ),
-          /* @__PURE__ */ jsx(
+          !autoGenerate && /* @__PURE__ */ jsx(
             "div",
             {
               style: {
@@ -531,7 +575,9 @@ const CompositeInput = (props) => {
         ] }),
         fields.length > 0 && /* @__PURE__ */ jsx(Field.Hint, { children: /* @__PURE__ */ jsxs(Typography, { variant: "pi", textColor: "neutral600", children: [
           "Combines: ",
-          fields.join(", ")
+          fields.join(", "),
+          autoGenerate && " (auto-generated)",
+          !editable && " (read-only)"
         ] }) }),
         /* @__PURE__ */ jsx(Field.Error, {})
       ] })

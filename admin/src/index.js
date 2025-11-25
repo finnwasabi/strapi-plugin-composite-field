@@ -18,7 +18,7 @@ const CompositeIcon = () =>
         color: "#0c75af",
       },
     },
-    "Aa",
+    "Aa"
   );
 
 export default {
@@ -83,7 +83,42 @@ export default {
             ],
           },
         ],
-        advanced: [],
+        advanced: [
+          {
+            sectionTitle: {
+              id: "composite-field.advanced.title",
+              defaultMessage: "Settings",
+            },
+            items: [
+              {
+                name: "options.editable",
+                type: "checkbox",
+                intlLabel: {
+                  id: "composite-field.editable.label",
+                  defaultMessage: "Editable",
+                },
+                description: {
+                  id: "composite-field.editable.description",
+                  defaultMessage:
+                    "Allow manual editing of the composite field value",
+                },
+              },
+              {
+                name: "options.autoGenerate",
+                type: "checkbox",
+                intlLabel: {
+                  id: "composite-field.autoGenerate.label",
+                  defaultMessage: "Auto-generate",
+                },
+                description: {
+                  id: "composite-field.autoGenerate.description",
+                  defaultMessage:
+                    "Automatically generate value when source fields change",
+                },
+              },
+            ],
+          },
+        ],
       },
     });
   },
