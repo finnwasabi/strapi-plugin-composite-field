@@ -2,6 +2,7 @@ import React from "react";
 import { Field, Flex, Button, Typography } from "@strapi/design-system";
 import { Play } from "@strapi/icons";
 import { useIntl } from "react-intl";
+import { useCMEditViewDataManager } from "@strapi/strapi/admin";
 
 const CompositeInput = (props) => {
   if (!props) {
@@ -21,6 +22,9 @@ const CompositeInput = (props) => {
     label,
     intlLabel,
   } = props;
+
+  // Get form data from Strapi's context
+  const { modifiedData } = useCMEditViewDataManager();
 
   const { formatMessage } = useIntl();
   const [localValue, setLocalValue] = React.useState(value || "");
@@ -52,43 +56,18 @@ const CompositeInput = (props) => {
   };
 
   const handleGenerate = React.useCallback(() => {
-    const formData = {};
-
-    // Get values from text fields, selects, and enums
-    fields.forEach((fieldPath) => {
-      // Try to find input/textarea/select
-      const input = document.querySelector(
-        `input[name="${fieldPath}"], textarea[name="${fieldPath}"], select[name="${fieldPath}"]`
-      );
-
-      if (input && input.value) {
-        formData[fieldPath] = input.value;
-      } else {
-        // Try to find enum field (Strapi v5 uses different structure)
-        const enumSelect = document.querySelector(
-          `[data-strapi-field-name="${fieldPath}"] select`
-        );
-        if (enumSelect && enumSelect.value) {
-          formData[fieldPath] = enumSelect.value;
-        }
-
-        // Also try to find the selected option text for better display
-        const enumButton = document.querySelector(
-          `[data-strapi-field-name="${fieldPath}"] button[role="combobox"]`
-        );
-        if (enumButton) {
-          const selectedText = enumButton.textContent?.trim();
-          if (selectedText && selectedText !== "Select...") {
-            formData[fieldPath] = selectedText;
-          }
-        }
-      }
-    });
-
     const parts = [];
+
+    // Get values directly from Strapi's form context (modifiedData)
     fields.forEach((fieldPath) => {
-      const fieldValue = formData[fieldPath];
-      if (fieldValue) {
+      // Get value from form data
+      const fieldValue = modifiedData?.[fieldPath];
+
+      if (
+        fieldValue !== null &&
+        fieldValue !== undefined &&
+        fieldValue !== ""
+      ) {
         parts.push(fieldValue);
       }
     });
@@ -102,41 +81,19 @@ const CompositeInput = (props) => {
     if (onChange) {
       onChange({ target: { name, value: result, type: "text" } });
     }
-  }, [fields, separator, onChange, name]);
+  }, [fields, separator, onChange, name, modifiedData]);
 
   // Auto-generate when fields change
   React.useEffect(() => {
-    if (!autoGenerate || fields.length === 0) return;
+    if (!autoGenerate || fields.length === 0 || !modifiedData) return;
 
-    const handleFieldChange = () => {
-      // Debounce to avoid too many updates
-      const timeoutId = setTimeout(() => {
-        handleGenerate();
-      }, 300);
-      return () => clearTimeout(timeoutId);
-    };
+    // Debounce to avoid too many updates
+    const timeoutId = setTimeout(() => {
+      handleGenerate();
+    }, 300);
 
-    // Listen to input events on all fields
-    const listeners = [];
-    fields.forEach((fieldPath) => {
-      const elements = document.querySelectorAll(
-        `input[name="${fieldPath}"], textarea[name="${fieldPath}"], select[name="${fieldPath}"], [data-strapi-field-name="${fieldPath}"] select, [data-strapi-field-name="${fieldPath}"] button`
-      );
-
-      elements.forEach((element) => {
-        element.addEventListener("change", handleFieldChange);
-        element.addEventListener("input", handleFieldChange);
-        listeners.push({ element, handler: handleFieldChange });
-      });
-    });
-
-    return () => {
-      listeners.forEach(({ element, handler }) => {
-        element.removeEventListener("change", handler);
-        element.removeEventListener("input", handler);
-      });
-    };
-  }, [autoGenerate, fields, handleGenerate]);
+    return () => clearTimeout(timeoutId);
+  }, [autoGenerate, fields, modifiedData, handleGenerate]);
 
   return (
     <Field.Root

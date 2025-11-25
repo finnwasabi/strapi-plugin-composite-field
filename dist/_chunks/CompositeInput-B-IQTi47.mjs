@@ -3,6 +3,7 @@ import * as React from "react";
 import React__default from "react";
 import { Field, Flex, Button, Typography } from "@strapi/design-system";
 import { Play } from "@strapi/icons";
+import { useCMEditViewDataManager } from "@strapi/strapi/admin";
 var __assign = function() {
   __assign = Object.assign || function __assign2(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -427,6 +428,7 @@ const CompositeInput = (props) => {
     label,
     intlLabel
   } = props;
+  const { modifiedData } = useCMEditViewDataManager();
   const { formatMessage } = useIntl();
   const [localValue, setLocalValue] = React__default.useState(value || "");
   React__default.useEffect(() => {
@@ -448,35 +450,10 @@ const CompositeInput = (props) => {
     }
   };
   const handleGenerate = React__default.useCallback(() => {
-    const formData = {};
-    fields.forEach((fieldPath) => {
-      const input = document.querySelector(
-        `input[name="${fieldPath}"], textarea[name="${fieldPath}"], select[name="${fieldPath}"]`
-      );
-      if (input && input.value) {
-        formData[fieldPath] = input.value;
-      } else {
-        const enumSelect = document.querySelector(
-          `[data-strapi-field-name="${fieldPath}"] select`
-        );
-        if (enumSelect && enumSelect.value) {
-          formData[fieldPath] = enumSelect.value;
-        }
-        const enumButton = document.querySelector(
-          `[data-strapi-field-name="${fieldPath}"] button[role="combobox"]`
-        );
-        if (enumButton) {
-          const selectedText = enumButton.textContent?.trim();
-          if (selectedText && selectedText !== "Select...") {
-            formData[fieldPath] = selectedText;
-          }
-        }
-      }
-    });
     const parts = [];
     fields.forEach((fieldPath) => {
-      const fieldValue = formData[fieldPath];
-      if (fieldValue) {
+      const fieldValue = modifiedData?.[fieldPath];
+      if (fieldValue !== null && fieldValue !== void 0 && fieldValue !== "") {
         parts.push(fieldValue);
       }
     });
@@ -486,33 +463,14 @@ const CompositeInput = (props) => {
     if (onChange) {
       onChange({ target: { name, value: result, type: "text" } });
     }
-  }, [fields, separator, onChange, name]);
+  }, [fields, separator, onChange, name, modifiedData]);
   React__default.useEffect(() => {
-    if (!autoGenerate || fields.length === 0) return;
-    const handleFieldChange = () => {
-      const timeoutId = setTimeout(() => {
-        handleGenerate();
-      }, 300);
-      return () => clearTimeout(timeoutId);
-    };
-    const listeners = [];
-    fields.forEach((fieldPath) => {
-      const elements = document.querySelectorAll(
-        `input[name="${fieldPath}"], textarea[name="${fieldPath}"], select[name="${fieldPath}"], [data-strapi-field-name="${fieldPath}"] select, [data-strapi-field-name="${fieldPath}"] button`
-      );
-      elements.forEach((element) => {
-        element.addEventListener("change", handleFieldChange);
-        element.addEventListener("input", handleFieldChange);
-        listeners.push({ element, handler: handleFieldChange });
-      });
-    });
-    return () => {
-      listeners.forEach(({ element, handler }) => {
-        element.removeEventListener("change", handler);
-        element.removeEventListener("input", handler);
-      });
-    };
-  }, [autoGenerate, fields, handleGenerate]);
+    if (!autoGenerate || fields.length === 0 || !modifiedData) return;
+    const timeoutId = setTimeout(() => {
+      handleGenerate();
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [autoGenerate, fields, modifiedData, handleGenerate]);
   return /* @__PURE__ */ jsx(
     Field.Root,
     {

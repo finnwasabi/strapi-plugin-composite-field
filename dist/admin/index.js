@@ -37,7 +37,7 @@ const index = {
         defaultMessage: "Combine multiple fields into one display value"
       },
       components: {
-        Input: async () => Promise.resolve().then(() => require("../_chunks/CompositeInput-cwqJYLtS.js"))
+        Input: async () => Promise.resolve().then(() => require("../_chunks/CompositeInput-B2zE74Yh.js"))
       },
       options: {
         base: [
