@@ -2,7 +2,7 @@ import React from "react";
 import { Field, Flex, Button, Typography } from "@strapi/design-system";
 import { Play } from "@strapi/icons";
 import { useIntl } from "react-intl";
-import { useCMEditViewDataManager } from "@strapi/strapi/admin";
+import { useForm } from "@strapi/admin/strapi-admin";
 
 const CompositeInput = (props) => {
   if (!props) {
@@ -23,8 +23,8 @@ const CompositeInput = (props) => {
     intlLabel,
   } = props;
 
-  // Get form data from Strapi's context
-  const { modifiedData } = useCMEditViewDataManager();
+  // Get form data from Strapi's form context
+  const { values } = useForm();
 
   const { formatMessage } = useIntl();
   const [localValue, setLocalValue] = React.useState(value || "");
@@ -58,10 +58,10 @@ const CompositeInput = (props) => {
   const handleGenerate = React.useCallback(() => {
     const parts = [];
 
-    // Get values directly from Strapi's form context (modifiedData)
+    // Get values directly from Strapi's form context
     fields.forEach((fieldPath) => {
       // Get value from form data
-      const fieldValue = modifiedData?.[fieldPath];
+      const fieldValue = values?.[fieldPath];
 
       if (
         fieldValue !== null &&
@@ -81,11 +81,11 @@ const CompositeInput = (props) => {
     if (onChange) {
       onChange({ target: { name, value: result, type: "text" } });
     }
-  }, [fields, separator, onChange, name, modifiedData]);
+  }, [fields, separator, onChange, name, values]);
 
   // Auto-generate when fields change
   React.useEffect(() => {
-    if (!autoGenerate || fields.length === 0 || !modifiedData) return;
+    if (!autoGenerate || fields.length === 0 || !values) return;
 
     // Debounce to avoid too many updates
     const timeoutId = setTimeout(() => {
@@ -93,7 +93,7 @@ const CompositeInput = (props) => {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [autoGenerate, fields, modifiedData, handleGenerate]);
+  }, [autoGenerate, fields, values, handleGenerate]);
 
   return (
     <Field.Root
