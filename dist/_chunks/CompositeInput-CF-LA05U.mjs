@@ -464,27 +464,13 @@ const CompositeInput = (props) => {
         }
       }
       if (!fieldValue) {
-        const allComboboxes = document.querySelectorAll(
-          'button[role="combobox"]'
+        const combobox = document.querySelector(
+          `div[role="combobox"][name="${fieldPath}"]`
         );
-        for (const combobox of allComboboxes) {
-          const fieldContainer = combobox.closest("[data-strapi-field]") || combobox.closest('div[class*="Field"]');
-          if (fieldContainer) {
-            const label2 = fieldContainer.querySelector("label");
-            const hiddenInput = fieldContainer.querySelector(
-              `input[name="${fieldPath}"]`
-            );
-            if (label2 || hiddenInput) {
-              const labelText = label2?.textContent?.trim().toLowerCase() || "";
-              const fieldName = fieldPath.toLowerCase();
-              if (labelText === fieldName || labelText.replace(/\s+/g, "").includes(fieldName.replace(/\s+/g, "")) || hiddenInput) {
-                const selectedText = combobox.textContent?.trim();
-                if (selectedText && selectedText !== "Select..." && selectedText !== "") {
-                  fieldValue = selectedText;
-                  break;
-                }
-              }
-            }
+        if (combobox) {
+          const selectedText = combobox.textContent?.trim();
+          if (selectedText && selectedText !== "Select..." && selectedText !== "") {
+            fieldValue = selectedText;
           }
         }
       }
@@ -519,7 +505,7 @@ const CompositeInput = (props) => {
     const listeners = [];
     fields.forEach((fieldPath) => {
       const elements = document.querySelectorAll(
-        `input[name="${fieldPath}"], textarea[name="${fieldPath}"], select[name="${fieldPath}"], button[role="combobox"]`
+        `input[name="${fieldPath}"], textarea[name="${fieldPath}"], select[name="${fieldPath}"], div[role="combobox"][name="${fieldPath}"]`
       );
       elements.forEach((element) => {
         element.addEventListener("change", handleFieldChange);

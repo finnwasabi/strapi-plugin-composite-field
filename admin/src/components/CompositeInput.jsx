@@ -74,50 +74,22 @@ const CompositeInput = (props) => {
         }
       }
 
-      // Strategy 3: Try to find SingleSelect/Combobox by searching near the field name
+      // Strategy 3: Try to find Combobox (enum field in Strapi v5)
       if (!fieldValue) {
-        // Look for all combobox buttons
-        const allComboboxes = document.querySelectorAll(
-          'button[role="combobox"]'
+        // Strapi v5 uses div with role="combobox" and name attribute for enum fields
+        const combobox = document.querySelector(
+          `div[role="combobox"][name="${fieldPath}"]`
         );
 
-        for (const combobox of allComboboxes) {
-          // Check if this combobox is associated with our field
-          // by looking at the parent structure
-          const fieldContainer =
-            combobox.closest("[data-strapi-field]") ||
-            combobox.closest('div[class*="Field"]');
-
-          if (fieldContainer) {
-            // Look for label or input with matching name in this container
-            const label = fieldContainer.querySelector("label");
-            const hiddenInput = fieldContainer.querySelector(
-              `input[name="${fieldPath}"]`
-            );
-
-            if (label || hiddenInput) {
-              const labelText = label?.textContent?.trim().toLowerCase() || "";
-              const fieldName = fieldPath.toLowerCase();
-
-              // Check if label matches field name (with some flexibility)
-              if (
-                labelText === fieldName ||
-                labelText
-                  .replace(/\s+/g, "")
-                  .includes(fieldName.replace(/\s+/g, "")) ||
-                hiddenInput
-              ) {
-                const selectedText = combobox.textContent?.trim();
-                if (
-                  selectedText &&
-                  selectedText !== "Select..." &&
-                  selectedText !== ""
-                ) {
-                  fieldValue = selectedText;
-                  break;
-                }
-              }
-            }
+        if (combobox) {
+          // Get the selected value from the combobox text content
+          const selectedText = combobox.textContent?.trim();
+          if (
+            selectedText &&
+            selectedText !== "Select..." &&
+            selectedText !== ""
+          ) {
+            fieldValue = selectedText;
           }
         }
       }
@@ -165,7 +137,7 @@ const CompositeInput = (props) => {
     const listeners = [];
     fields.forEach((fieldPath) => {
       const elements = document.querySelectorAll(
-        `input[name="${fieldPath}"], textarea[name="${fieldPath}"], select[name="${fieldPath}"], button[role="combobox"]`
+        `input[name="${fieldPath}"], textarea[name="${fieldPath}"], select[name="${fieldPath}"], div[role="combobox"][name="${fieldPath}"]`
       );
 
       elements.forEach((element) => {
