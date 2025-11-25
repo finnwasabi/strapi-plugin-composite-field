@@ -66,7 +66,7 @@ const CompositeInput = (props) => {
         fieldValue = input.value;
       }
 
-      // Strategy 2: Try to find select/enum field
+      // Strategy 2: Try to find select/enum field by name
       if (!fieldValue) {
         const select = document.querySelector(`select[name="${fieldPath}"]`);
         if (select && select.value) {
@@ -74,23 +74,39 @@ const CompositeInput = (props) => {
         }
       }
 
-      // Strategy 3: Try to find SingleSelect component (enum in Strapi v5)
+      // Strategy 3: Try to find SingleSelect/Combobox by searching near the field name
       if (!fieldValue) {
-        // Find the field container by looking for label
-        const labels = document.querySelectorAll("label");
-        for (const labelEl of labels) {
-          const labelText = labelEl.textContent?.trim().toLowerCase();
-          const fieldName = fieldPath.toLowerCase();
+        // Look for all combobox buttons
+        const allComboboxes = document.querySelectorAll(
+          'button[role="combobox"]'
+        );
 
-          if (labelText === fieldName || labelText.includes(fieldName)) {
-            // Found the label, now find the combobox button
-            const container =
-              labelEl.closest('[role="group"]') || labelEl.parentElement;
-            if (container) {
-              const combobox = container.querySelector(
-                'button[role="combobox"]'
-              );
-              if (combobox) {
+        for (const combobox of allComboboxes) {
+          // Check if this combobox is associated with our field
+          // by looking at the parent structure
+          const fieldContainer =
+            combobox.closest("[data-strapi-field]") ||
+            combobox.closest('div[class*="Field"]');
+
+          if (fieldContainer) {
+            // Look for label or input with matching name in this container
+            const label = fieldContainer.querySelector("label");
+            const hiddenInput = fieldContainer.querySelector(
+              `input[name="${fieldPath}"]`
+            );
+
+            if (label || hiddenInput) {
+              const labelText = label?.textContent?.trim().toLowerCase() || "";
+              const fieldName = fieldPath.toLowerCase();
+
+              // Check if label matches field name (with some flexibility)
+              if (
+                labelText === fieldName ||
+                labelText
+                  .replace(/\s+/g, "")
+                  .includes(fieldName.replace(/\s+/g, "")) ||
+                hiddenInput
+              ) {
                 const selectedText = combobox.textContent?.trim();
                 if (
                   selectedText &&
@@ -102,6 +118,18 @@ const CompositeInput = (props) => {
                 }
               }
             }
+          }
+        }
+      }
+
+      // Strategy 4: Fallback - search by field ID or aria attributes
+      if (!fieldValue) {
+        const fieldById = document.getElementById(fieldPath);
+        if (fieldById) {
+          if (fieldById.tagName === "SELECT") {
+            fieldValue = fieldById.value;
+          } else if (fieldById.value) {
+            fieldValue = fieldById.value;
           }
         }
       }

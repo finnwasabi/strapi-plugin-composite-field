@@ -483,17 +483,20 @@ const CompositeInput = (props) => {
         }
       }
       if (!fieldValue) {
-        const labels = document.querySelectorAll("label");
-        for (const labelEl of labels) {
-          const labelText = labelEl.textContent?.trim().toLowerCase();
-          const fieldName = fieldPath.toLowerCase();
-          if (labelText === fieldName || labelText.includes(fieldName)) {
-            const container = labelEl.closest('[role="group"]') || labelEl.parentElement;
-            if (container) {
-              const combobox = container.querySelector(
-                'button[role="combobox"]'
-              );
-              if (combobox) {
+        const allComboboxes = document.querySelectorAll(
+          'button[role="combobox"]'
+        );
+        for (const combobox of allComboboxes) {
+          const fieldContainer = combobox.closest("[data-strapi-field]") || combobox.closest('div[class*="Field"]');
+          if (fieldContainer) {
+            const label2 = fieldContainer.querySelector("label");
+            const hiddenInput = fieldContainer.querySelector(
+              `input[name="${fieldPath}"]`
+            );
+            if (label2 || hiddenInput) {
+              const labelText = label2?.textContent?.trim().toLowerCase() || "";
+              const fieldName = fieldPath.toLowerCase();
+              if (labelText === fieldName || labelText.replace(/\s+/g, "").includes(fieldName.replace(/\s+/g, "")) || hiddenInput) {
                 const selectedText = combobox.textContent?.trim();
                 if (selectedText && selectedText !== "Select..." && selectedText !== "") {
                   fieldValue = selectedText;
@@ -501,6 +504,16 @@ const CompositeInput = (props) => {
                 }
               }
             }
+          }
+        }
+      }
+      if (!fieldValue) {
+        const fieldById = document.getElementById(fieldPath);
+        if (fieldById) {
+          if (fieldById.tagName === "SELECT") {
+            fieldValue = fieldById.value;
+          } else if (fieldById.value) {
+            fieldValue = fieldById.value;
           }
         }
       }
