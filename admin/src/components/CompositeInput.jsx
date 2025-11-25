@@ -2,7 +2,6 @@ import React from "react";
 import { Field, Flex, Button, Typography } from "@strapi/design-system";
 import { Play } from "@strapi/icons";
 import { useIntl } from "react-intl";
-import { useForm } from "@strapi/admin/strapi-admin";
 
 const CompositeInput = (props) => {
   if (!props) {
@@ -22,9 +21,6 @@ const CompositeInput = (props) => {
     label,
     intlLabel,
   } = props;
-
-  // Get form data from Strapi's form context
-  const { values } = useForm();
 
   const { formatMessage } = useIntl();
   const [localValue, setLocalValue] = React.useState(value || "");
@@ -58,16 +54,59 @@ const CompositeInput = (props) => {
   const handleGenerate = React.useCallback(() => {
     const parts = [];
 
-    // Get values directly from Strapi's form context
+    // Get values from form fields
     fields.forEach((fieldPath) => {
-      // Get value from form data
-      const fieldValue = values?.[fieldPath];
+      let fieldValue = null;
 
-      if (
-        fieldValue !== null &&
-        fieldValue !== undefined &&
-        fieldValue !== ""
-      ) {
+      // Strategy 1: Try to find input/textarea with name attribute
+      const input = document.querySelector(
+        `input[name="${fieldPath}"], textarea[name="${fieldPath}"]`
+      );
+      if (input && input.value) {
+        fieldValue = input.value;
+      }
+
+      // Strategy 2: Try to find select/enum field
+      if (!fieldValue) {
+        const select = document.querySelector(`select[name="${fieldPath}"]`);
+        if (select && select.value) {
+          fieldValue = select.value;
+        }
+      }
+
+      // Strategy 3: Try to find SingleSelect component (enum in Strapi v5)
+      if (!fieldValue) {
+        // Find the field container by looking for label
+        const labels = document.querySelectorAll("label");
+        for (const labelEl of labels) {
+          const labelText = labelEl.textContent?.trim().toLowerCase();
+          const fieldName = fieldPath.toLowerCase();
+
+          if (labelText === fieldName || labelText.includes(fieldName)) {
+            // Found the label, now find the combobox button
+            const container =
+              labelEl.closest('[role="group"]') || labelEl.parentElement;
+            if (container) {
+              const combobox = container.querySelector(
+                'button[role="combobox"]'
+              );
+              if (combobox) {
+                const selectedText = combobox.textContent?.trim();
+                if (
+                  selectedText &&
+                  selectedText !== "Select..." &&
+                  selectedText !== ""
+                ) {
+                  fieldValue = selectedText;
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (fieldValue) {
         parts.push(fieldValue);
       }
     });
@@ -81,19 +120,42 @@ const CompositeInput = (props) => {
     if (onChange) {
       onChange({ target: { name, value: result, type: "text" } });
     }
-  }, [fields, separator, onChange, name, values]);
+  }, [fields, separator, onChange, name]);
 
   // Auto-generate when fields change
   React.useEffect(() => {
-    if (!autoGenerate || fields.length === 0 || !values) return;
+    if (!autoGenerate || fields.length === 0) return;
 
-    // Debounce to avoid too many updates
-    const timeoutId = setTimeout(() => {
-      handleGenerate();
-    }, 300);
+    const handleFieldChange = () => {
+      // Debounce to avoid too many updates
+      setTimeout(() => {
+        handleGenerate();
+      }, 300);
+    };
 
-    return () => clearTimeout(timeoutId);
-  }, [autoGenerate, fields, values, handleGenerate]);
+    // Listen to input events on all fields
+    const listeners = [];
+    fields.forEach((fieldPath) => {
+      const elements = document.querySelectorAll(
+        `input[name="${fieldPath}"], textarea[name="${fieldPath}"], select[name="${fieldPath}"], button[role="combobox"]`
+      );
+
+      elements.forEach((element) => {
+        element.addEventListener("change", handleFieldChange);
+        element.addEventListener("input", handleFieldChange);
+        element.addEventListener("click", handleFieldChange);
+        listeners.push({ element, handler: handleFieldChange });
+      });
+    });
+
+    return () => {
+      listeners.forEach(({ element, handler }) => {
+        element.removeEventListener("change", handler);
+        element.removeEventListener("input", handler);
+        element.removeEventListener("click", handler);
+      });
+    };
+  }, [autoGenerate, fields, handleGenerate]);
 
   return (
     <Field.Root
