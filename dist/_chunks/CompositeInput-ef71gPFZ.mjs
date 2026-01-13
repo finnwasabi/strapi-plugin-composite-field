@@ -1,27 +1,8 @@
-"use strict";
-Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-const jsxRuntime = require("react/jsx-runtime");
-const React = require("react");
-const designSystem = require("@strapi/design-system");
-const icons = require("@strapi/icons");
-function _interopNamespace(e) {
-  if (e && e.__esModule) return e;
-  const n = Object.create(null, { [Symbol.toStringTag]: { value: "Module" } });
-  if (e) {
-    for (const k in e) {
-      if (k !== "default") {
-        const d = Object.getOwnPropertyDescriptor(e, k);
-        Object.defineProperty(n, k, d.get ? d : {
-          enumerable: true,
-          get: () => e[k]
-        });
-      }
-    }
-  }
-  n.default = e;
-  return Object.freeze(n);
-}
-const React__namespace = /* @__PURE__ */ _interopNamespace(React);
+import { jsx, jsxs } from "react/jsx-runtime";
+import * as React from "react";
+import React__default from "react";
+import { Field, Flex, Button, Typography } from "@strapi/design-system";
+import { Play } from "@strapi/icons";
 var __assign = function() {
   __assign = Object.assign || function __assign2(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -369,13 +350,13 @@ var DEFAULT_INTL_CONFIG = {
 function invariantIntlContext(intl) {
   invariant(intl, "[React Intl] Could not find required `intl` object. <IntlProvider> needs to exist in the component ancestry.");
 }
-__assign(__assign({}, DEFAULT_INTL_CONFIG), { textComponent: React__namespace.Fragment });
-var IntlContext = typeof window !== "undefined" && !window.__REACT_INTL_BYPASS_GLOBAL_CONTEXT__ ? window.__REACT_INTL_CONTEXT__ || (window.__REACT_INTL_CONTEXT__ = React__namespace.createContext(null)) : React__namespace.createContext(null);
+__assign(__assign({}, DEFAULT_INTL_CONFIG), { textComponent: React.Fragment });
+var IntlContext = typeof window !== "undefined" && !window.__REACT_INTL_BYPASS_GLOBAL_CONTEXT__ ? window.__REACT_INTL_CONTEXT__ || (window.__REACT_INTL_CONTEXT__ = React.createContext(null)) : React.createContext(null);
 IntlContext.Consumer;
 IntlContext.Provider;
 var Context = IntlContext;
 function useIntl() {
-  var intl = React__namespace.useContext(Context);
+  var intl = React.useContext(Context);
   invariantIntlContext(intl);
   return intl;
 }
@@ -416,8 +397,8 @@ function createFormattedComponent(name) {
     if (typeof children === "function") {
       return children(formattedValue);
     }
-    var Text = intl.textComponent || React__namespace.Fragment;
-    return React__namespace.createElement(Text, null, formattedValue);
+    var Text = intl.textComponent || React.Fragment;
+    return React.createElement(Text, null, formattedValue);
   };
   Component.displayName = DisplayName[name];
   return Component;
@@ -447,8 +428,8 @@ const CompositeInput = (props) => {
     intlLabel
   } = props;
   const { formatMessage } = useIntl();
-  const [localValue, setLocalValue] = React__namespace.default.useState(value || "");
-  React__namespace.default.useEffect(() => {
+  const [localValue, setLocalValue] = React__default.useState(value || "");
+  React__default.useEffect(() => {
     setLocalValue(value || "");
   }, [value]);
   const fieldsConfig = attribute?.options?.fields || "";
@@ -466,7 +447,16 @@ const CompositeInput = (props) => {
       onChange({ target: { name, value: newValue, type: "text" } });
     }
   };
-  const handleGenerate = React__namespace.default.useCallback(() => {
+  const formatTimeValue = (value2) => {
+    if (!value2) return value2;
+    const timeRegex = /^(\d{2}):(\d{2}):(\d{2})(\.\d{3})?$/;
+    const match = value2.match(timeRegex);
+    if (match) {
+      return `${match[1]}:${match[2]}`;
+    }
+    return value2;
+  };
+  const handleGenerate = React__default.useCallback(() => {
     const parts = [];
     fields.forEach((fieldPath) => {
       let fieldValue = null;
@@ -504,6 +494,7 @@ const CompositeInput = (props) => {
         }
       }
       if (fieldValue) {
+        fieldValue = formatTimeValue(fieldValue);
         parts.push(fieldValue);
       }
     });
@@ -514,7 +505,7 @@ const CompositeInput = (props) => {
       onChange({ target: { name, value: result, type: "text" } });
     }
   }, [fields, separator, onChange, name]);
-  React__namespace.default.useEffect(() => {
+  React__default.useEffect(() => {
     if (!autoGenerate || fields.length === 0) return;
     let debounceTimer;
     const handleFieldChange = () => {
@@ -559,19 +550,19 @@ const CompositeInput = (props) => {
       observers.forEach((observer) => observer.disconnect());
     };
   }, [autoGenerate, fields, handleGenerate]);
-  return /* @__PURE__ */ jsxRuntime.jsx(
-    designSystem.Field.Root,
+  return /* @__PURE__ */ jsx(
+    Field.Root,
     {
       name,
       id: name,
       error,
       hint: description?.id ? formatMessage(description) : description,
       required,
-      children: /* @__PURE__ */ jsxRuntime.jsxs(designSystem.Flex, { direction: "column", alignItems: "stretch", gap: 1, children: [
-        /* @__PURE__ */ jsxRuntime.jsx(designSystem.Flex, { children: /* @__PURE__ */ jsxRuntime.jsx(designSystem.Field.Label, { action: labelAction, children: label || intlLabel?.defaultMessage || name }) }),
-        /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { position: "relative" }, children: [
-          /* @__PURE__ */ jsxRuntime.jsx(
-            designSystem.Field.Input,
+      children: /* @__PURE__ */ jsxs(Flex, { direction: "column", alignItems: "stretch", gap: 1, children: [
+        /* @__PURE__ */ jsx(Flex, { children: /* @__PURE__ */ jsx(Field.Label, { action: labelAction, children: label || intlLabel?.defaultMessage || name }) }),
+        /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, children: [
+          /* @__PURE__ */ jsx(
+            Field.Input,
             {
               type: "text",
               value: localValue,
@@ -581,7 +572,7 @@ const CompositeInput = (props) => {
               style: { paddingRight: "40px" }
             }
           ),
-          !autoGenerate && /* @__PURE__ */ jsxRuntime.jsx(
+          !autoGenerate && /* @__PURE__ */ jsx(
             "div",
             {
               style: {
@@ -593,8 +584,8 @@ const CompositeInput = (props) => {
                 alignItems: "center",
                 justifyContent: "center"
               },
-              children: /* @__PURE__ */ jsxRuntime.jsx(
-                designSystem.Button,
+              children: /* @__PURE__ */ jsx(
+                Button,
                 {
                   type: "button",
                   onClick: handleGenerate,
@@ -613,21 +604,23 @@ const CompositeInput = (props) => {
                     justifyContent: "center",
                     color: "#8e8ea9"
                   },
-                  children: /* @__PURE__ */ jsxRuntime.jsx(icons.Play, { style: { width: "14px", height: "14px" } })
+                  children: /* @__PURE__ */ jsx(Play, { style: { width: "14px", height: "14px" } })
                 }
               )
             }
           )
         ] }),
-        fields.length > 0 && /* @__PURE__ */ jsxRuntime.jsx(designSystem.Field.Hint, { children: /* @__PURE__ */ jsxRuntime.jsxs(designSystem.Typography, { variant: "pi", textColor: "neutral600", children: [
+        fields.length > 0 && /* @__PURE__ */ jsx(Field.Hint, { children: /* @__PURE__ */ jsxs(Typography, { variant: "pi", textColor: "neutral600", children: [
           "Combines: ",
           fields.join(", "),
           autoGenerate && " (auto-generated)",
           !editable && " (read-only)"
         ] }) }),
-        /* @__PURE__ */ jsxRuntime.jsx(designSystem.Field.Error, {})
+        /* @__PURE__ */ jsx(Field.Error, {})
       ] })
     }
   );
 };
-exports.default = CompositeInput;
+export {
+  CompositeInput as default
+};

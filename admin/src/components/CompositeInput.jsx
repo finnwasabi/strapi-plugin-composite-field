@@ -1,7 +1,7 @@
-import React from "react";
-import { Field, Flex, Button, Typography } from "@strapi/design-system";
-import { Play } from "@strapi/icons";
-import { useIntl } from "react-intl";
+import React from 'react';
+import { Field, Flex, Button, Typography } from '@strapi/design-system';
+import { Play } from '@strapi/icons';
+import { useIntl } from 'react-intl';
 
 const CompositeInput = (props) => {
   if (!props) {
@@ -23,22 +23,22 @@ const CompositeInput = (props) => {
   } = props;
 
   const { formatMessage } = useIntl();
-  const [localValue, setLocalValue] = React.useState(value || "");
+  const [localValue, setLocalValue] = React.useState(value || '');
 
   React.useEffect(() => {
-    setLocalValue(value || "");
+    setLocalValue(value || '');
   }, [value]);
 
-  const fieldsConfig = attribute?.options?.fields || "";
-  const separator = attribute?.options?.separator || " - ";
+  const fieldsConfig = attribute?.options?.fields || '';
+  const separator = attribute?.options?.separator || ' - ';
   const editable = attribute?.options?.editable !== false;
   const autoGenerate = attribute?.options?.autoGenerate === true;
 
   // Parse fields
   let fields = [];
-  if (typeof fieldsConfig === "string") {
+  if (typeof fieldsConfig === 'string') {
     fields = fieldsConfig
-      .split("\n")
+      .split('\n')
       .map((f) => f.trim())
       .filter(Boolean);
   }
@@ -47,8 +47,24 @@ const CompositeInput = (props) => {
     const newValue = e.target.value;
     setLocalValue(newValue);
     if (onChange) {
-      onChange({ target: { name, value: newValue, type: "text" } });
+      onChange({ target: { name, value: newValue, type: 'text' } });
     }
+  };
+
+  // Helper function to format time values
+  const formatTimeValue = (value) => {
+    if (!value) return value;
+
+    // Check if value is time format (HH:MM:SS.mmm or HH:MM:SS)
+    const timeRegex = /^(\d{2}):(\d{2}):(\d{2})(\.\d{3})?$/;
+    const match = value.match(timeRegex);
+
+    if (match) {
+      // Return only HH:MM
+      return `${match[1]}:${match[2]}`;
+    }
+
+    return value;
   };
 
   const handleGenerate = React.useCallback(() => {
@@ -86,8 +102,8 @@ const CompositeInput = (props) => {
           const selectedText = combobox.textContent?.trim();
           if (
             selectedText &&
-            selectedText !== "Select..." &&
-            selectedText !== ""
+            selectedText !== 'Select...' &&
+            selectedText !== ''
           ) {
             fieldValue = selectedText;
           }
@@ -98,7 +114,7 @@ const CompositeInput = (props) => {
       if (!fieldValue) {
         const fieldById = document.getElementById(fieldPath);
         if (fieldById) {
-          if (fieldById.tagName === "SELECT") {
+          if (fieldById.tagName === 'SELECT') {
             fieldValue = fieldById.value;
           } else if (fieldById.value) {
             fieldValue = fieldById.value;
@@ -107,6 +123,8 @@ const CompositeInput = (props) => {
       }
 
       if (fieldValue) {
+        // Format time values to HH:MM
+        fieldValue = formatTimeValue(fieldValue);
         parts.push(fieldValue);
       }
     });
@@ -118,7 +136,7 @@ const CompositeInput = (props) => {
     setLocalValue(result);
 
     if (onChange) {
-      onChange({ target: { name, value: result, type: "text" } });
+      onChange({ target: { name, value: result, type: 'text' } });
     }
   }, [fields, separator, onChange, name]);
 
@@ -146,8 +164,8 @@ const CompositeInput = (props) => {
       );
 
       elements.forEach((element) => {
-        element.addEventListener("change", handleFieldChange);
-        element.addEventListener("input", handleFieldChange);
+        element.addEventListener('change', handleFieldChange);
+        element.addEventListener('input', handleFieldChange);
         listeners.push({ element, handler: handleFieldChange });
       });
 
@@ -167,7 +185,7 @@ const CompositeInput = (props) => {
         observers.push(observer);
 
         // Also listen to click events on the combobox
-        combobox.addEventListener("click", handleFieldChange);
+        combobox.addEventListener('click', handleFieldChange);
         listeners.push({ element: combobox, handler: handleFieldChange });
       }
     });
@@ -175,9 +193,9 @@ const CompositeInput = (props) => {
     return () => {
       clearTimeout(debounceTimer);
       listeners.forEach(({ element, handler }) => {
-        element.removeEventListener("change", handler);
-        element.removeEventListener("input", handler);
-        element.removeEventListener("click", handler);
+        element.removeEventListener('change', handler);
+        element.removeEventListener('input', handler);
+        element.removeEventListener('click', handler);
       });
       observers.forEach((observer) => observer.disconnect());
     };
@@ -198,7 +216,7 @@ const CompositeInput = (props) => {
           </Field.Label>
         </Flex>
 
-        <div style={{ position: "relative" }}>
+        <div style={{ position: 'relative' }}>
           <Field.Input
             type="text"
             value={localValue}
@@ -206,21 +224,21 @@ const CompositeInput = (props) => {
             disabled={disabled || !editable}
             placeholder={
               autoGenerate
-                ? "Auto-generated from fields"
-                : "Click button to generate"
+                ? 'Auto-generated from fields'
+                : 'Click button to generate'
             }
-            style={{ paddingRight: "40px" }}
+            style={{ paddingRight: '40px' }}
           />
           {!autoGenerate && (
             <div
               style={{
-                position: "absolute",
-                right: "8px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                position: 'absolute',
+                right: '8px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               <Button
@@ -230,19 +248,19 @@ const CompositeInput = (props) => {
                 variant="tertiary"
                 aria-label="Generate composite value"
                 style={{
-                  width: "28px",
-                  height: "28px",
-                  padding: "0",
-                  minWidth: "auto",
-                  border: "none",
-                  background: "transparent",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#8e8ea9",
+                  width: '28px',
+                  height: '28px',
+                  padding: '0',
+                  minWidth: 'auto',
+                  border: 'none',
+                  background: 'transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#8e8ea9',
                 }}
               >
-                <Play style={{ width: "14px", height: "14px" }} />
+                <Play style={{ width: '14px', height: '14px' }} />
               </Button>
             </div>
           )}
@@ -251,9 +269,9 @@ const CompositeInput = (props) => {
         {fields.length > 0 && (
           <Field.Hint>
             <Typography variant="pi" textColor="neutral600">
-              Combines: {fields.join(", ")}
-              {autoGenerate && " (auto-generated)"}
-              {!editable && " (read-only)"}
+              Combines: {fields.join(', ')}
+              {autoGenerate && ' (auto-generated)'}
+              {!editable && ' (read-only)'}
             </Typography>
           </Field.Hint>
         )}
