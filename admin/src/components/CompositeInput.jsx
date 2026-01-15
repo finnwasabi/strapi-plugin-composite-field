@@ -1,13 +1,11 @@
-import React from 'react';
-import { Field, Flex, Button, Typography } from '@strapi/design-system';
+import { Button, Field, Flex, Typography } from '@strapi/design-system';
 import { Play } from '@strapi/icons';
+import { unstable_useContentManagerContext as useContentManagerContext } from '@strapi/strapi/admin';
+import get from 'lodash/get';
+import React from 'react';
 import { useIntl } from 'react-intl';
 
 const CompositeInput = (props) => {
-  if (!props) {
-    return null;
-  }
-
   const {
     attribute,
     name,
@@ -23,10 +21,17 @@ const CompositeInput = (props) => {
   } = props;
 
   const { formatMessage } = useIntl();
+  const { form } = useContentManagerContext();
+  const { values } = form;
+
   const [localValue, setLocalValue] = React.useState(value || '');
 
+  const lastGeneratedVal = React.useRef(value || '');
+
   React.useEffect(() => {
-    setLocalValue(value || '');
+    const validValue = value || '';
+    setLocalValue(validValue);
+    lastGeneratedVal.current = validValue;
   }, [value]);
 
   const fieldsConfig = attribute?.options?.fields || '';
@@ -35,171 +40,127 @@ const CompositeInput = (props) => {
   const autoGenerate = attribute?.options?.autoGenerate === true;
 
   // Parse fields
-  let fields = [];
-  if (typeof fieldsConfig === 'string') {
-    fields = fieldsConfig
-      .split('\n')
-      .map((f) => f.trim())
-      .filter(Boolean);
-  }
+  const fields = React.useMemo(() => {
+    if (typeof fieldsConfig === 'string') {
+      return fieldsConfig
+        .split('\n')
+        .map((f) => f.trim())
+        .filter(Boolean);
+    }
+    return [];
+  }, [fieldsConfig]);
 
   const handleChange = (e) => {
     const newValue = e.target.value;
     setLocalValue(newValue);
+    lastGeneratedVal.current = newValue;
     if (onChange) {
       onChange({ target: { name, value: newValue, type: 'text' } });
     }
   };
 
-  // Helper function to format time values
-  const formatTimeValue = (value) => {
-    if (!value) return value;
+  // Helper function to format values (especially time/date)
+  const formatFieldValue = React.useCallback((val) => {
+    if (val === null || val === undefined) return '';
+
+    // If it's a Date object
+    if (val instanceof Date) {
+      return val.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+    }
+
+    const stringVal = String(val);
 
     // Check if value is time format (HH:MM:SS.mmm or HH:MM:SS)
     const timeRegex = /^(\d{2}):(\d{2}):(\d{2})(\.\d{3})?$/;
-    const match = value.match(timeRegex);
+    const match = stringVal.match(timeRegex);
 
     if (match) {
       // Return only HH:MM
       return `${match[1]}:${match[2]}`;
     }
 
-    return value;
-  };
+    return stringVal;
+  }, []);
 
   const handleGenerate = React.useCallback(() => {
-    const parts = [];
+    // Calculate parent path to resolve relative field names
+    const parts = name.split('.');
 
-    // Get values from form fields
-    fields.forEach((fieldPath) => {
-      let fieldValue = null;
+    parts.pop(); // Remove current field name
+    const parentPath = parts.join('.');
 
-      // Strategy 1: Try to find input/textarea with name attribute
-      const input = document.querySelector(
-        `input[name="${fieldPath}"], textarea[name="${fieldPath}"]`
-      );
-      if (input && input.value) {
-        fieldValue = input.value;
-      }
+    const generatedParts = [];
 
-      // Strategy 2: Try to find select/enum field by name
-      if (!fieldValue) {
-        const select = document.querySelector(`select[name="${fieldPath}"]`);
-        if (select && select.value) {
-          fieldValue = select.value;
+    fields.forEach((fieldName) => {
+      // Resolve full path for the target field
+      const fullPath = parentPath ? `${parentPath}.${fieldName}` : fieldName;
+
+      // Get raw value from form values
+      let rawValue = get(values, fullPath);
+
+      // Handle different value types
+      if (rawValue !== null && rawValue !== undefined) {
+        let stringValue = '';
+
+        // Handle relations/objects
+        if (typeof rawValue === 'object' && !(rawValue instanceof Date)) {
+          if (rawValue.name) stringValue = String(rawValue.name);
+          else if (rawValue.title) stringValue = String(rawValue.title);
+          else if (rawValue.label) stringValue = String(rawValue.label);
+        } else {
+          stringValue = formatFieldValue(rawValue);
         }
-      }
 
-      // Strategy 3: Try to find Combobox (enum field in Strapi v5)
-      if (!fieldValue) {
-        // Strapi v5 uses div with role="combobox" and name attribute for enum fields
-        const combobox = document.querySelector(
-          `div[role="combobox"][name="${fieldPath}"]`
-        );
-
-        if (combobox) {
-          // Get the selected value from the combobox text content
-          const selectedText = combobox.textContent?.trim();
-          if (
-            selectedText &&
-            selectedText !== 'Select...' &&
-            selectedText !== ''
-          ) {
-            fieldValue = selectedText;
-          }
+        if (stringValue) {
+          generatedParts.push(stringValue);
         }
-      }
-
-      // Strategy 4: Fallback - search by field ID or aria attributes
-      if (!fieldValue) {
-        const fieldById = document.getElementById(fieldPath);
-        if (fieldById) {
-          if (fieldById.tagName === 'SELECT') {
-            fieldValue = fieldById.value;
-          } else if (fieldById.value) {
-            fieldValue = fieldById.value;
-          }
-        }
-      }
-
-      if (fieldValue) {
-        // Format time values to HH:MM
-        fieldValue = formatTimeValue(fieldValue);
-        parts.push(fieldValue);
       }
     });
 
     // Ensure separator has spaces around it
     const cleanSeparator = separator.trim();
-    const result = parts.join(` ${cleanSeparator} `).trim();
+    const result = generatedParts.join(` ${cleanSeparator} `).trim();
 
-    setLocalValue(result);
+    if (result !== lastGeneratedVal.current) {
+      setLocalValue(result);
+      lastGeneratedVal.current = result;
 
-    if (onChange) {
-      onChange({ target: { name, value: result, type: 'text' } });
+      if (onChange) {
+        onChange({ target: { name, value: result, type: 'text' } });
+      }
     }
-  }, [fields, separator, onChange, name]);
+  }, [fields, separator, onChange, name, values, formatFieldValue]);
 
-  // Auto-generate when fields change
+  // Watch only the relevant field values to trigger auto-generation
+  const watchedValues = React.useMemo(() => {
+    const parts = name.split('.');
+    parts.pop();
+    const parentPath = parts.join('.');
+
+    return fields.map((fieldName) => {
+      const fullPath = parentPath ? `${parentPath}.${fieldName}` : fieldName;
+      return get(values, fullPath);
+    });
+  }, [fields, name, values]);
+
+  // Auto-generate when watched values change
   React.useEffect(() => {
     if (!autoGenerate || fields.length === 0) return;
 
-    let debounceTimer;
-    const handleFieldChange = () => {
-      // Debounce to avoid too many updates
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        handleGenerate();
-      }, 300);
-    };
+    const timeoutId = setTimeout(() => {
+      handleGenerate();
+    }, 300); // Debounce
 
-    // Listen to input events on all fields
-    const listeners = [];
-    const observers = [];
+    return () => clearTimeout(timeoutId);
+  }, [autoGenerate, fields, handleGenerate, watchedValues, name]);
 
-    fields.forEach((fieldPath) => {
-      // For regular input/textarea/select fields
-      const elements = document.querySelectorAll(
-        `input[name="${fieldPath}"], textarea[name="${fieldPath}"], select[name="${fieldPath}"]`
-      );
-
-      elements.forEach((element) => {
-        element.addEventListener('change', handleFieldChange);
-        element.addEventListener('input', handleFieldChange);
-        listeners.push({ element, handler: handleFieldChange });
-      });
-
-      // For combobox (enum) fields - use MutationObserver to watch text changes
-      const combobox = document.querySelector(
-        `div[role="combobox"][name="${fieldPath}"]`
-      );
-
-      if (combobox) {
-        // Watch for text content changes in the combobox
-        const observer = new MutationObserver(handleFieldChange);
-        observer.observe(combobox, {
-          childList: true,
-          subtree: true,
-          characterData: true,
-        });
-        observers.push(observer);
-
-        // Also listen to click events on the combobox
-        combobox.addEventListener('click', handleFieldChange);
-        listeners.push({ element: combobox, handler: handleFieldChange });
-      }
-    });
-
-    return () => {
-      clearTimeout(debounceTimer);
-      listeners.forEach(({ element, handler }) => {
-        element.removeEventListener('change', handler);
-        element.removeEventListener('input', handler);
-        element.removeEventListener('click', handler);
-      });
-      observers.forEach((observer) => observer.disconnect());
-    };
-  }, [autoGenerate, fields, handleGenerate]);
+  if (!props) {
+    return null;
+  }
 
   return (
     <Field.Root
