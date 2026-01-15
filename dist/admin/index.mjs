@@ -34,7 +34,7 @@ const index = {
         defaultMessage: "Combine multiple fields into one display value"
       },
       components: {
-        Input: async () => import("../_chunks/CompositeInput-CttJhnnb.mjs")
+        Input: async () => import("../_chunks/CompositeInput-L5-14cJV.mjs")
       },
       options: {
         base: [

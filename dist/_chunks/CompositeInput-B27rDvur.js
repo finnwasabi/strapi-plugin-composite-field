@@ -905,9 +905,7 @@ const CompositeInput = (props) => {
   const { form } = admin.unstable_useContentManagerContext();
   const { values } = form;
   const [localValue, setLocalValue] = React__namespace.default.useState(value || "");
-  window.alert("CompositeInput rendered: " + name);
   const lastGeneratedVal = React__namespace.default.useRef(value || "");
-  console.log(lastGeneratedVal);
   React__namespace.default.useEffect(() => {
     const validValue = value || "";
     setLocalValue(validValue);
@@ -950,8 +948,6 @@ const CompositeInput = (props) => {
   }, []);
   const handleGenerate = React__namespace.default.useCallback(() => {
     const parts = name.split(".");
-    window.alert("handleGenerate triggered for: " + name);
-    console.log(parts);
     parts.pop();
     const parentPath = parts.join(".");
     const generatedParts = [];
@@ -994,7 +990,6 @@ const CompositeInput = (props) => {
   React__namespace.default.useEffect(() => {
     if (!autoGenerate || fields.length === 0) return;
     const timeoutId = setTimeout(() => {
-      window.alert("Effect triggered auto-generate for: " + name);
       handleGenerate();
     }, 300);
     return () => clearTimeout(timeoutId);
