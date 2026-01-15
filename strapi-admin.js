@@ -37,7 +37,7 @@ export default {
         defaultMessage: "Combine multiple fields into one display value",
       },
       components: {
-        Input: async () => import("./components/CompositeInput"),
+        Input: async () => import("./admin/src/components/CompositeInput"),
       },
       options: {
         base: [
