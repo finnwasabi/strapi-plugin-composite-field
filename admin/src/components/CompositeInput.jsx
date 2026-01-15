@@ -74,13 +74,23 @@ const CompositeInput = (props) => {
 
     const stringVal = String(val);
 
+    // Check if value is ISO date format (YYYY-MM-DDTHH:MM:SS.sssZ or YYYY-MM-DD)
+    const isoDateRegex = /^(\d{4})-(\d{2})-(\d{2})(T[\d:.]+Z?)?$/;
+    const dateMatch = stringVal.match(isoDateRegex);
+
+    if (dateMatch) {
+      // Return in MM/DD/YYYY format
+      const [, year, month, day] = dateMatch;
+      return `${month}/${day}/${year}`;
+    }
+
     // Check if value is time format (HH:MM:SS.mmm or HH:MM:SS)
     const timeRegex = /^(\d{2}):(\d{2}):(\d{2})(\.\d{3})?$/;
-    const match = stringVal.match(timeRegex);
+    const timeMatch = stringVal.match(timeRegex);
 
-    if (match) {
+    if (timeMatch) {
       // Return only HH:MM
-      return `${match[1]}:${match[2]}`;
+      return `${timeMatch[1]}:${timeMatch[2]}`;
     }
 
     return stringVal;
