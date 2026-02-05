@@ -1,83 +1,83 @@
-import React from "react";
+import React from 'react';
 
 const CompositeIcon = () =>
   React.createElement(
-    "div",
+    'div',
     {
       style: {
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        width: "32px",
-        height: "24px",
-        borderRadius: "4px",
-        border: "1px solid #b8e1ff",
-        background: "#eafbff",
-        fontSize: "14px",
-        fontWeight: "600",
-        color: "#0c75af",
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '32px',
+        height: '24px',
+        borderRadius: '4px',
+        border: '1px solid #b8e1ff',
+        background: '#eafbff',
+        fontSize: '14px',
+        fontWeight: '600',
+        color: '#0c75af',
       },
     },
-    "Aa"
+    'Aa'
   );
 
 export default {
   register(app) {
     app.customFields.register({
-      name: "composite",
-      pluginId: "composite-field",
-      type: "string",
+      name: 'composite',
+      pluginId: 'composite-field',
+      type: 'string',
       icon: CompositeIcon,
       intlLabel: {
-        id: "composite-field.label",
-        defaultMessage: "Composite",
+        id: 'composite-field.label',
+        defaultMessage: 'Composite',
       },
       intlDescription: {
-        id: "composite-field.description",
-        defaultMessage: "Combine multiple fields into one display value",
+        id: 'composite-field.description',
+        defaultMessage: 'Combine multiple fields into one display value',
       },
       components: {
-        Input: async () => import("./admin/src/components/CompositeInput"),
+        Input: async () => import('./admin/src/components/CompositeInput'),
       },
       options: {
         base: [
           {
             sectionTitle: {
-              id: "composite-field.section.title",
-              defaultMessage: "Settings",
+              id: 'composite-field.section.title',
+              defaultMessage: 'Settings',
             },
             items: [
               {
-                name: "options.fields",
-                type: "textarea",
+                name: 'options.fields',
+                type: 'textarea',
                 intlLabel: {
-                  id: "composite-field.fields.label",
-                  defaultMessage: "Fields to combine",
+                  id: 'composite-field.fields.label',
+                  defaultMessage: 'Fields to combine',
                 },
                 description: {
-                  id: "composite-field.fields.description",
+                  id: 'composite-field.fields.description',
                   defaultMessage:
-                    "Enter field names (one per line). Only text/string fields are supported.",
+                    'Enter field names (one per line). Only text/string fields are supported.',
                 },
                 placeholder: {
-                  id: "composite-field.fields.placeholder",
-                  defaultMessage: "salutation\nfirstName\nlastName\nemail",
+                  id: 'composite-field.fields.placeholder',
+                  defaultMessage: 'salutation\nfirstName\nlastName\nemail',
                 },
               },
               {
-                name: "options.separator",
-                type: "text",
+                name: 'options.separator',
+                type: 'text',
                 intlLabel: {
-                  id: "composite-field.separator.label",
-                  defaultMessage: "Separator",
+                  id: 'composite-field.separator.label',
+                  defaultMessage: 'Separator',
                 },
                 description: {
-                  id: "composite-field.separator.description",
+                  id: 'composite-field.separator.description',
                   defaultMessage: 'Separator between fields (default: " - ")',
                 },
                 placeholder: {
-                  id: "composite-field.separator.placeholder",
-                  defaultMessage: " - ",
+                  id: 'composite-field.separator.placeholder',
+                  defaultMessage: ' - ',
                 },
               },
             ],
@@ -86,34 +86,21 @@ export default {
         advanced: [
           {
             sectionTitle: {
-              id: "composite-field.advanced.title",
-              defaultMessage: "Settings",
+              id: 'composite-field.advanced.title',
+              defaultMessage: 'Settings',
             },
             items: [
               {
-                name: "options.editable",
-                type: "checkbox",
+                name: 'options.autoGenerate',
+                type: 'checkbox',
                 intlLabel: {
-                  id: "composite-field.editable.label",
-                  defaultMessage: "Editable",
+                  id: 'composite-field.autoGenerate.label',
+                  defaultMessage: 'Auto-generate',
                 },
                 description: {
-                  id: "composite-field.editable.description",
+                  id: 'composite-field.autoGenerate.description',
                   defaultMessage:
-                    "Allow manual editing of the composite field value",
-                },
-              },
-              {
-                name: "options.autoGenerate",
-                type: "checkbox",
-                intlLabel: {
-                  id: "composite-field.autoGenerate.label",
-                  defaultMessage: "Auto-generate",
-                },
-                description: {
-                  id: "composite-field.autoGenerate.description",
-                  defaultMessage:
-                    "Automatically generate value when source fields change",
+                    'Automatically generate value when source fields change',
                 },
               },
             ],

@@ -25,18 +25,21 @@ const CompositeInput = (props) => {
   const { values } = form;
 
   const [localValue, setLocalValue] = React.useState(value || '');
+  const [isManuallyEdited, setIsManuallyEdited] = React.useState(false);
 
   const lastGeneratedVal = React.useRef(value || '');
+  const lastWatchedValues = React.useRef([]);
 
   React.useEffect(() => {
     const validValue = value || '';
     setLocalValue(validValue);
     lastGeneratedVal.current = validValue;
+    // Reset manual edit flag when value changes from outside (e.g., form reset)
+    setIsManuallyEdited(false);
   }, [value]);
 
   const fieldsConfig = attribute?.options?.fields || '';
   const separator = attribute?.options?.separator || ' - ';
-  const editable = attribute?.options?.editable !== false;
   const autoGenerate = attribute?.options?.autoGenerate === true;
 
   // Parse fields
@@ -54,6 +57,8 @@ const CompositeInput = (props) => {
     const newValue = e.target.value;
     setLocalValue(newValue);
     lastGeneratedVal.current = newValue;
+    // Mark as manually edited when user types
+    setIsManuallyEdited(true);
     if (onChange) {
       onChange({ target: { name, value: newValue, type: 'text' } });
     }
@@ -131,13 +136,22 @@ const CompositeInput = (props) => {
       }
     });
 
-    // Ensure separator has spaces around it
+    // Handle separator logic - if separator is just a space, don't add extra spaces
     const cleanSeparator = separator.trim();
-    const result = generatedParts.join(` ${cleanSeparator} `).trim();
+    let result;
+    if (cleanSeparator === '') {
+      // If separator is just spaces, use single space
+      result = generatedParts.join(' ').trim();
+    } else {
+      // For other separators, add spaces around them
+      result = generatedParts.join(` ${cleanSeparator} `).trim();
+    }
 
     if (result !== lastGeneratedVal.current) {
       setLocalValue(result);
       lastGeneratedVal.current = result;
+      // Reset manual edit flag when auto-generating
+      setIsManuallyEdited(false);
 
       if (onChange) {
         onChange({ target: { name, value: result, type: 'text' } });
@@ -161,12 +175,29 @@ const CompositeInput = (props) => {
   React.useEffect(() => {
     if (!autoGenerate || fields.length === 0) return;
 
-    const timeoutId = setTimeout(() => {
-      handleGenerate();
-    }, 300); // Debounce
+    // Check if watched values actually changed
+    const currentWatchedValues = JSON.stringify(watchedValues);
+    const lastWatchedValuesStr = JSON.stringify(lastWatchedValues.current);
 
-    return () => clearTimeout(timeoutId);
-  }, [autoGenerate, fields, handleGenerate, watchedValues, name]);
+    // Only auto-generate if:
+    // 1. Values actually changed
+    // 2. User hasn't manually edited the field
+    if (currentWatchedValues !== lastWatchedValuesStr) {
+      lastWatchedValues.current = watchedValues;
+
+      if (!isManuallyEdited) {
+        const timeoutId = setTimeout(() => {
+          handleGenerate();
+        }, 300); // Debounce
+
+        return () => clearTimeout(timeoutId);
+      } else {
+        // If manually edited, reset the flag when source fields change
+        // This allows auto-generation to resume after source field changes
+        setIsManuallyEdited(false);
+      }
+    }
+  }, [autoGenerate, fields, handleGenerate, watchedValues, isManuallyEdited]);
 
   if (!props) {
     return null;
@@ -192,7 +223,7 @@ const CompositeInput = (props) => {
             type="text"
             value={localValue}
             onChange={handleChange}
-            disabled={disabled || !editable}
+            disabled={disabled}
             placeholder={
               autoGenerate
                 ? 'Auto-generated from fields'
@@ -242,7 +273,6 @@ const CompositeInput = (props) => {
             <Typography variant="pi" textColor="neutral600">
               Combines: {fields.join(', ')}
               {autoGenerate && ' (auto-generated)'}
-              {!editable && ' (read-only)'}
             </Typography>
           </Field.Hint>
         )}
