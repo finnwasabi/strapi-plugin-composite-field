@@ -216,3 +216,7 @@ MIT
 ## Author
 
 Tung Le - [@finnwasabi](https://github.com/finnwasabi)
+
+---
+
+Built by **Tung Le**. More Strapi plugins and case studies at [tungln.is-a.dev](https://tungln.is-a.dev).

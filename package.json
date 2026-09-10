@@ -1,6 +1,6 @@
 {
   "name": "@tunghtml/strapi-plugin-composite-field",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "A Strapi v5 plugin to create composite display fields by combining multiple text, string, and enum fields with auto-generate support",
   "keywords": [
     "strapi",
@@ -18,7 +18,11 @@
     "url": "git+https://github.com/finnwasabi/strapi-plugin-composite-field.git"
   },
   "license": "MIT",
-  "author": "Tung Le <tunghtml@gmail.com>",
+  "author": {
+    "name": "Tung Le",
+    "email": "nhattung1511@gmail.com",
+    "url": "https://tungln.is-a.dev"
+  },
   "files": [
     "admin",
     "server",
