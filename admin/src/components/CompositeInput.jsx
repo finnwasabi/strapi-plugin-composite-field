@@ -5,6 +5,57 @@ import get from 'lodash/get';
 import React from 'react';
 import { useIntl } from 'react-intl';
 
+const ISO_DATE_REGEX = /^(\d{4})-(\d{2})-(\d{2})(T[\d:.]+Z?)?$/;
+const TIME_REGEX = /^(\d{2}):(\d{2}):(\d{2})(\.\d{3})?$/;
+
+// Format a source value for display (especially time/date)
+const formatFieldValue = (val) => {
+  if (val === null || val === undefined) return '';
+
+  // If it's a Date object
+  if (val instanceof Date) {
+    return val.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  }
+
+  const stringVal = String(val);
+
+  // ISO date (YYYY-MM-DDTHH:MM:SS.sssZ or YYYY-MM-DD) => MM/DD/YYYY
+  const dateMatch = ISO_DATE_REGEX.exec(stringVal);
+  if (dateMatch) {
+    const [, year, month, day] = dateMatch;
+    return `${month}/${day}/${year}`;
+  }
+
+  // Time (HH:MM:SS.mmm or HH:MM:SS) => HH:MM
+  const timeMatch = TIME_REGEX.exec(stringVal);
+  if (timeMatch) {
+    return `${timeMatch[1]}:${timeMatch[2]}`;
+  }
+
+  return stringVal;
+};
+
+// Text of one source value: relations/objects use their name, title or label
+const toDisplayText = (rawValue) => {
+  if (rawValue === null || rawValue === undefined) return '';
+  if (typeof rawValue === 'object' && !(rawValue instanceof Date)) {
+    return String(rawValue.name || rawValue.title || rawValue.label || '');
+  }
+  return formatFieldValue(rawValue);
+};
+
+// A space-only separator joins with single spaces, other separators get spaces around them
+const joinParts = (parts, separator) => {
+  const cleanSeparator = separator.trim();
+  return cleanSeparator === ''
+    ? parts.join(' ').trim()
+    : parts.join(` ${cleanSeparator} `).trim();
+};
+
 const CompositeInput = (props) => {
   const {
     attribute,
@@ -69,43 +120,6 @@ const CompositeInput = (props) => {
     }
   };
 
-  // Helper function to format values (especially time/date)
-  const formatFieldValue = React.useCallback((val) => {
-    if (val === null || val === undefined) return '';
-
-    // If it's a Date object
-    if (val instanceof Date) {
-      return val.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      });
-    }
-
-    const stringVal = String(val);
-
-    // Check if value is ISO date format (YYYY-MM-DDTHH:MM:SS.sssZ or YYYY-MM-DD)
-    const isoDateRegex = /^(\d{4})-(\d{2})-(\d{2})(T[\d:.]+Z?)?$/;
-    const dateMatch = stringVal.match(isoDateRegex);
-
-    if (dateMatch) {
-      // Return in MM/DD/YYYY format
-      const [, year, month, day] = dateMatch;
-      return `${month}/${day}/${year}`;
-    }
-
-    // Check if value is time format (HH:MM:SS.mmm or HH:MM:SS)
-    const timeRegex = /^(\d{2}):(\d{2}):(\d{2})(\.\d{3})?$/;
-    const timeMatch = stringVal.match(timeRegex);
-
-    if (timeMatch) {
-      // Return only HH:MM
-      return `${timeMatch[1]}:${timeMatch[2]}`;
-    }
-
-    return stringVal;
-  }, []);
-
   const handleGenerate = React.useCallback(() => {
     // Calculate parent path to resolve relative field names
     const parts = name.split('.');
@@ -113,44 +127,15 @@ const CompositeInput = (props) => {
     parts.pop(); // Remove current field name
     const parentPath = parts.join('.');
 
-    const generatedParts = [];
+    const generatedParts = fields
+      .map((fieldName) => {
+        // Resolve full path for the target field
+        const fullPath = parentPath ? `${parentPath}.${fieldName}` : fieldName;
+        return toDisplayText(get(values, fullPath));
+      })
+      .filter(Boolean);
 
-    fields.forEach((fieldName) => {
-      // Resolve full path for the target field
-      const fullPath = parentPath ? `${parentPath}.${fieldName}` : fieldName;
-
-      // Get raw value from form values
-      let rawValue = get(values, fullPath);
-
-      // Handle different value types
-      if (rawValue !== null && rawValue !== undefined) {
-        let stringValue = '';
-
-        // Handle relations/objects
-        if (typeof rawValue === 'object' && !(rawValue instanceof Date)) {
-          if (rawValue.name) stringValue = String(rawValue.name);
-          else if (rawValue.title) stringValue = String(rawValue.title);
-          else if (rawValue.label) stringValue = String(rawValue.label);
-        } else {
-          stringValue = formatFieldValue(rawValue);
-        }
-
-        if (stringValue) {
-          generatedParts.push(stringValue);
-        }
-      }
-    });
-
-    // Handle separator logic - if separator is just a space, don't add extra spaces
-    const cleanSeparator = separator.trim();
-    let result;
-    if (cleanSeparator === '') {
-      // If separator is just spaces, use single space
-      result = generatedParts.join(' ').trim();
-    } else {
-      // For other separators, add spaces around them
-      result = generatedParts.join(` ${cleanSeparator} `).trim();
-    }
+    const result = joinParts(generatedParts, separator);
 
     if (result !== lastGeneratedVal.current) {
       setLocalValue(result);
@@ -162,7 +147,7 @@ const CompositeInput = (props) => {
         onChange({ target: { name, value: result, type: 'text' } });
       }
     }
-  }, [fields, separator, onChange, name, values, formatFieldValue]);
+  }, [fields, separator, onChange, name, values]);
 
   // Watch only the relevant field values to trigger auto-generation
   const watchedValues = React.useMemo(() => {

@@ -176,6 +176,12 @@ Result: Panel Discussion - John Doe
 
 ## Changelog
 
+### v1.2.9 (2026-10-19)
+
+**🔧 Technical:**
+
+- Value formatting and joining moved out of the component, regexes use `RegExp.exec`
+
 ### v1.2.8 (2026-10-19)
 
 **🐛 Bug Fixes:**
