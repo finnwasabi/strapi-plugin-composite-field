@@ -141,6 +141,7 @@ Enable **Auto-generate** in Advanced settings to automatically update the compos
 - If you manually edit the composite field, it will preserve your changes
 - When any source field changes, auto-generation resumes with the new values
 - This prevents accidental overwrites while maintaining automatic updates
+- Opening an existing entry keeps its saved value: the field is only regenerated after a source field changes, so the entry is not marked as modified on load
 
 ### Space-Only Separator
 
@@ -174,6 +175,13 @@ Result: Panel Discussion - John Doe
 - Auto-generate uses a 300ms debounce to avoid excessive updates
 
 ## Changelog
+
+### v1.2.8 (2026-10-19)
+
+**🐛 Bug Fixes:**
+
+- Opening an existing entry no longer regenerates the composite value, which marked the form as modified and rewrote the stored value on the next save
+- Loading another entry or resetting the form takes the loaded value as the new starting point
 
 ### v1.2.4 (2026-02-05)
 

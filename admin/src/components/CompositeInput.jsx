@@ -28,10 +28,15 @@ const CompositeInput = (props) => {
   const [isManuallyEdited, setIsManuallyEdited] = React.useState(false);
 
   const lastGeneratedVal = React.useRef(value || '');
-  const lastWatchedValues = React.useRef([]);
+  // Source values the field was last generated from; null until the form has loaded
+  const lastWatchedValues = React.useRef(null);
 
   React.useEffect(() => {
     const validValue = value || '';
+    // A value this field did not produce (another entry loaded, form reset) is a new baseline
+    if (validValue !== lastGeneratedVal.current) {
+      lastWatchedValues.current = null;
+    }
     setLocalValue(validValue);
     lastGeneratedVal.current = validValue;
     // Reset manual edit flag when value changes from outside (e.g., form reset)
@@ -177,13 +182,19 @@ const CompositeInput = (props) => {
 
     // Check if watched values actually changed
     const currentWatchedValues = JSON.stringify(watchedValues);
-    const lastWatchedValuesStr = JSON.stringify(lastWatchedValues.current);
+
+    // Keep the saved value when an entry opens: regenerating it there marks the form as
+    // modified and overwrites values written by the server on the next save
+    if (lastWatchedValues.current === null) {
+      lastWatchedValues.current = currentWatchedValues;
+      return;
+    }
 
     // Only auto-generate if:
     // 1. Values actually changed
     // 2. User hasn't manually edited the field
-    if (currentWatchedValues !== lastWatchedValuesStr) {
-      lastWatchedValues.current = watchedValues;
+    if (currentWatchedValues !== lastWatchedValues.current) {
+      lastWatchedValues.current = currentWatchedValues;
 
       if (!isManuallyEdited) {
         const timeoutId = setTimeout(() => {
