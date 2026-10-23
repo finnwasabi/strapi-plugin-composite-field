@@ -1,5 +1,10 @@
 # Strapi Plugin Composite Field
 
+> [!IMPORTANT]
+> **This plugin has moved to [Strapi Field Kit](https://github.com/finnwasabi/strapi-field-kit/tree/main/packages/composite-field).**
+> Version 2.0 and later are developed there; please open issues and pull requests in that repository.
+> The npm package name is unchanged, and 1.x releases stay installable. See the [upgrade notes](https://github.com/finnwasabi/strapi-field-kit/tree/main/packages/composite-field#upgrading-from-1x).
+
 A Strapi v5 plugin that creates composite display fields by combining multiple text fields.
 
 ![Composite Field Demo](https://img.shields.io/badge/Strapi-v5-blue)
